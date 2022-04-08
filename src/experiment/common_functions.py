@@ -42,6 +42,7 @@ def update_config_from_params(config, params):
     # config["misc"]["method_type"] = params["method_type"]
     # code update
     config["train_loader"]["ann_path"] = params["ann_path"]
+    config["test_loader"]["ann_path"] = params["ann_path"]
     config["train_loader"]["exp_info"] = params["exp_info"]
     config["test_loader"]["exp_info"] = params["exp_info"]
     # fix

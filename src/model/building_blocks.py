@@ -572,7 +572,8 @@ class LocalGlobalVideoTextInteractions(nn.Module):
         # aggregating semantics-specific features
         _, sattw = self.satt_fn(se_feats)
         # [B,N,1,1] * [B,N,nseg,D] = [B,N,nseg,D]
-        a_feats = sattw.unsqueeze(2).unsqueeze(2) * ss_feats
+        # a_feats = sattw.unsqueeze(2).unsqueeze(2) * ss_feats # code fix (case 2)
+        a_feats = ss_feats
         a_feats = a_feats.sum(dim=1) # [B,nseg,D]
 
         # capturing contextual and temporal relations between semantic entities

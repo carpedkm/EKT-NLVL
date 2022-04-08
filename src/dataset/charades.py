@@ -380,7 +380,7 @@ if __name__ == "__main__":
     i = 1
     num_ol = 0
     for batch in l["test"]:
-        i += 1
+        i += 1  
         if batch["grounding_start_pos"] < 0.0 or batch["grounding_end_pos"] > 1.0:
             num_ol += 1
         st = time.time()

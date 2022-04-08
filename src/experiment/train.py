@@ -1,7 +1,7 @@
 import json
 import argparse
 import sys
-sys.path.append('/lgi/')
+sys.path.append('/ektnlvl/')
 from src.experiment import common_functions as cmf
 from src.utils import timer
 

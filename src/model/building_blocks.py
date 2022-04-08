@@ -347,6 +347,7 @@ class SequentialQueryAttention(nn.Module):
         prev_se = w_feats.new_zeros(B, self.qdim)
         se_feats, se_attw = [], []
         # compute semantic entity features sequentially
+        # self.nse=1 # for just using one SQAN module
         for n in range(self.nse):
             # perform Eq. (4)
             q_n = self.global_emb_fn[n](q_feats) # [B,qdim] -> [B,qdim]
@@ -358,7 +359,8 @@ class SequentialQueryAttention(nn.Module):
             se_feats.append(att_f)
             se_attw.append(att_w)
 
-        return torch.stack(se_feats, dim=1), torch.stack(se_attw, dim=1)
+        # return torch.stack(se_feats, dim=1), torch.stack(se_attw, dim=1)
+        return se_feats, se_attw
 
 
 class HadamardProduct(nn.Module):

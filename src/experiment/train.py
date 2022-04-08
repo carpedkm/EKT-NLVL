@@ -1,6 +1,7 @@
 import json
 import argparse
-
+import sys
+sys.path.append('/lgi/')
 from src.experiment import common_functions as cmf
 from src.utils import timer
 
@@ -19,9 +20,13 @@ def _get_argument_params():
         default=4, help="The number of workers for data loader.")
 	parser.add_argument("--debug_mode" , action="store_true", default=False,
 		help="Train the model in debug mode.")
-
+	parser.add_argument("--ann_path", type=str, default=True, 
+        help='input of the annotation file path')
+	parser.add_argument("--exp_info", type=str, default=True,
+        help='exp_info for preprocess file savings')
 	params = vars(parser.parse_args())
 	print(json.dumps(params, indent=4))
+	
 	return params
 
 """ Training the network """

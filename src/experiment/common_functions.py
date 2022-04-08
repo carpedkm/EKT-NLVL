@@ -37,7 +37,15 @@ def update_config_from_params(config, params):
             params["config_path"], delimiter="options/") if "options" in params["config_path"] \
             else utils.get_filename_from_path(params["config_path"], delimiter="results/")[:-7]
     config["misc"]["exp_prefix"] = exp_prefix
-    config["misc"]["result_dir"] = os.path.join("results", exp_prefix)
+    # config["misc"]["result_dir"] = os.path.join("results", exp_prefix)
+    # config["misc"]["tensorboard_dir"] = os.path.join("tensorboard", exp_prefix)
+    # config["misc"]["method_type"] = params["method_type"]
+    # code update
+    config["train_loader"]["ann_path"] = params["ann_path"]
+    config["train_loader"]["exp_info"] = params["exp_info"]
+    config["test_loader"]["exp_info"] = params["exp_info"]
+    # fix
+    config["misc"]["result_dir"] = os.path.join("results", params["exp_info"], exp_prefix)
     config["misc"]["tensorboard_dir"] = os.path.join("tensorboard", exp_prefix)
     config["misc"]["method_type"] = params["method_type"]
     if not "use_gpu" in config["model"].keys():

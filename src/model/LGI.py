@@ -33,8 +33,9 @@ class LGI(AbstractNetwork):
 
         # build sequential query attention network (sqan)
         self.nse = mconfig.get("num_semantic_entity", -1) # number of semantic phrases
-        if self.nse > 1:
-            self.sqan = bb.SequentialQueryAttention(mconfig)
+        # code fix #
+        # if self.nse > 1:
+        self.sqan = bb.SequentialQueryAttention(mconfig)
 
         # build local-global video-text interactions network (vti_fn)
         self.vti_fn = bb.LocalGlobalVideoTextInteractions(mconfig)
@@ -104,17 +105,18 @@ class LGI(AbstractNetwork):
         #           ([e^1,...,e^n]) in Eq. (7)
         # se_attw: attention weights for semantic phrase [B,nse,nword];
         #           ([a^1,...,a^n]) in Eq. (6)
-        if self.nse > 1:
-            se_feats, se_attw = self.sqan(sen_feats, word_feats, word_masks)
-        else: se_attw = None
+        # code fix #
+        # if self.nse > 1:
+        se_feats, se_attw = self.sqan(sen_feats, word_feats, word_masks)
+        # else: se_attw = None
 
         # Local-global video-text interactions
         # sa_feats: semantics-aware segment features [B,nseg,d]; R in Eq. (12)
         # s_attw: aggregating weights [B,nse]
-        if self.nse > 1:
-            q_feats = se_feats
-        else:
-            q_feats = sen_feats
+        # if self.nse > 1:
+        q_feats = (se_feats[0] + sen_feats) / 2
+        # else:
+            # q_feats = sen_feats
         sa_feats, s_attw = self.vti_fn(seg_feats, seg_masks, q_feats)
 
         # Temporal attentive localization by regression

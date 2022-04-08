@@ -44,6 +44,7 @@ class CharadesDataset(AbstractDataset):
         self.data_dir = config.get("data_dir", "data/charades")
         self.feature_type = config.get("feature_type", "I3D")
         self.in_memory = config.get("in_memory", False)
+        self.annpath = config.get('ann_path')
         if self.feature_type == "I3D":
             self.feat_path = config.get(
                 "video_feature_path",
@@ -56,7 +57,12 @@ class CharadesDataset(AbstractDataset):
         paths = self._get_data_path(config)
 
         # create labels (or load existing one)
-        ann_path = "data/charades/annotations/charades_sta_{}.txt".format(self.split)
+        # ann_path = "data/charades/annotations/charades_sta_{}.txt".format(self.split)
+        if self.split == 'train':
+            ann_path = "data/charades/annotations/{}".format(self.annpath)
+        else :
+            ann_path = 'data/charades/annotations/charades_sta_test.txt'
+        
         aux_ann_path = "data/charades/annotations/Charades_v1_{}.csv".format(self.split)
         self.anns, self.qids, self.vids = self._load_annotation(ann_path, aux_ann_path)
         if not self._exist_data(paths):
@@ -194,8 +200,9 @@ class CharadesDataset(AbstractDataset):
         F = config.get("frequency_threshold", 1)
         S = config.get("num_segment", 128)
         FT = config.get("feature_type", "I3D")
-
-        root_dir = os.path.join(config.get("data_dir", ""), "preprocess")
+        exp_info = config.get("exp_info")
+        # root_dir = os.path.join(config.get("data_dir", ""), "preprocess")
+        root_dir = os.path.join(config.get("data_dir", ""), "preprocess_{}".format(exp_info))
         grounding_info_path = os.path.join(root_dir,
                 "grounding_info", "{}_labels_S{}_{}.hdf5".format(split, S, FT))
         query_info_path = os.path.join(root_dir,
@@ -268,7 +275,8 @@ class CharadesDataset(AbstractDataset):
         """ Query information """
         if not os.path.exists(self.paths["query_labels"]):
             # build vocabulary from training data
-            train_ann_path = "data/charades/annotations/charades_sta_train.txt"
+            # train_ann_path = 'data/charades/annotations/charades_sta_train.txt'
+            train_ann_path = os.path.join('data/charades/annotations/', config['ann_path'])
             train_aux_path = "data/charades/annotations/Charades_v1_train.csv"
             train_anns, _, _ = self._load_annotation(train_ann_path, train_aux_path)
             wtoi = self._build_vocab(train_anns)

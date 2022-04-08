@@ -21,7 +21,7 @@ model:
     query_enc_rnn_dropout: 0.5
     glove_path: ""
     ### Sequential Query Attention Network (SQAN)
-    num_semantic_entity: 3
+    num_semantic_entity: 1
     sqan_qdim: -1 # == qdim 
     sqan_att_cand_dim: -1 # == qdim
     sqan_att_key_dim: -1 # == qdim
@@ -62,7 +62,7 @@ model:
     ### Criterion
     use_temporal_attention_guidance_loss: True
     tag_weight: 1.0
-    use_distinct_query_attention_loss: True
+    use_distinct_query_attention_loss: False
     dqa_weight: 1.0
     dqa_lambda: 0.3
 train_loader:
@@ -87,8 +87,9 @@ test_loader:
     max_length: 10
     word_frequency_threshold: 1
     num_segment: 128
+    ann_path: ''
 optimize:
-    num_step: 500 # epoch
+    num_step: 250 # epoch
     optimizer_type: "Adam"
     init_lr: 0.0004
     scheduler_type: ""

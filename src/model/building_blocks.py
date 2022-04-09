@@ -598,9 +598,10 @@ class AttentionLocRegressor(nn.Module):
         # Regression layer
         idim = config.get("grounding_idim", -1)
         gdim = config.get("grounding_hdim", 512)
-        nn_list = [ nn.Linear(idim, gdim), nn.ReLU(), nn.Linear(gdim, 2)]
+        # nn_list = [ nn.Linear(idim, gdim), nn.ReLU(), nn.Linear(gdim, 2)]
+        nn_list = [nn.Linear(idim, gdim), nn.ReLU(), nn.Linear(gdim, gdim * 2), nn.ReLU(), nn.Linear(gdim * 2, gdim), nn.ReLU(), nn.Linear(gdim, 2)]
         if config["dataset"] == "charades":
-            nn_list.append(nn.ReLU())
+            nn_list.append(nn.ReLU())   
         else:
             nn_list.append(nn.Sigmoid())
         self.MLP_reg = nn.Sequential(*nn_list)

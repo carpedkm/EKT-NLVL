@@ -10,17 +10,23 @@ def get_rnn(config, prefix=""):
     name = prefix if prefix is "" else prefix+"_"
 
     # fetch options
-    rnn_type = config.get(name+"rnn_type", "LSTM")
+    # rnn_type = config.get(name+"rnn_type", "LSTM")
+    layer_type=config.get(name + "encoder_layer", "TransformerEncoderLayer")
+    rnn_type = config.get(name + "rnn_type", "TransformerEncoder")
     bidirectional = config.get(name+"rnn_bidirectional", True)
-    nlayers = config.get(name+"rnn_nlayer", 2)
+    nlayers = config.get(name+"encoder_layer", 2)
     idim = config.get(name+"rnn_idim", -1)
     hdim = config.get(name+"rnn_hdim", -1)
     dropout = config.get(name+"rnn_dropout", 0.5)
-
-    rnn = getattr(nn, rnn_type)(idim, hdim, nlayers,
-                                batch_first=True, dropout=dropout,
-                                bidirectional=bidirectional)
-    return rnn
+    
+    # embedding = getattr(nn, "Embedding")(d_model=idim)
+    posencoding = getattr(nn, "PositionalEncoding")(d_model=idim, dropout=dropout)
+    layers = getattr(nn, layer_type)(d_model=idim, nheads=8, batch_first=True, d_hid=hdim, dropout=dropout)
+    transformer = getattr(nn, rnn_type)(layers, num_layers=nlayers)
+    transformer_with_encoding = posencoding(transformer)
+    
+    # return rnn
+    return transformer_with_encoding
 
 def get_rnn_cell(config, prefix=""):
     name = prefix if prefix is "" else prefix+"_"

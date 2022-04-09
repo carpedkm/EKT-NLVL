@@ -13,9 +13,10 @@ model:
     ### Query Encoder
     query_enc_emb_idim: -1 # == vocabulary size
     query_enc_emb_odim: 300 # == dim of Glove
-    query_enc_rnn_type: "LSTM"
+    query_enc_encoder_layer: "TransformerEncoderLayer"
+    query_enc_rnn_type: "TransformerEncoder" # originally LSTM
     query_enc_rnn_bidirectional: True
-    query_enc_rnn_nlayer: 2
+    query_enc_encoder_layer: 2 # rnn_nlayer
     query_enc_rnn_idim: -1 # == query_emb_odim
     query_enc_rnn_hdim: 256 # (=qdim)
     query_enc_rnn_dropout: 0.5

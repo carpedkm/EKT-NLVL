@@ -21,7 +21,7 @@ def get_evaluator(dt="didemo"):
 class TALLEvaluator(object):
     def __init__(self):
         self.tiou_threshold = [0.1, 0.3, 0.5, 0.7]
-        self.metrics = ["R1-0.1", "R1-0.3", "R1-0.5", "R1-0.7", "mIoU"]
+        self.metrics = ["R1-0.1", "R1-0.3", "R1-0.5", "R1-0.7", "R5-0.1", "R5-0.3", "R5-0.5", "R5-0.7", "mIoU"]
         #self.metrics = ["R1-0.3", "R1-0.5", "R1-0.7",
         #                "R5-0.3", "R5-0.5", "R5-0.7"]
         self.duration = None

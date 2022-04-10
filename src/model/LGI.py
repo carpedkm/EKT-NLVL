@@ -218,6 +218,8 @@ class LGI(AbstractNetwork):
 
         for k,v  in rank1.items():
             self.counters[k].add(v/nb, 1)
+        for k, v in rank5.items():
+            self.counters[k].add(v/nb, 1)
         self.counters["mIoU"].add(miou/nb, 1)
 
     def renew_best_score(self):

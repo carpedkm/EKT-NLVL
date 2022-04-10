@@ -74,7 +74,8 @@ class LGI(AbstractNetwork):
         return self._infer(net_inps, "forward")
 
     def visualize(self, vis_inps, vis_gt, prefix):
-        vis_data = self._infer(vis_inps, "visualize", vis_gt)
+        # vis_data = self._infer(vis_inps, "visualize", vis_gt)
+        vis_data, att = self._infer(vis_inps, "visualize", vis_gt)
         vis_utils.visualize_LGI(self.config, vis_data, self.itow, prefix)
 
     def extract_output(self, vis_inps, vis_gt, save_dir):
@@ -160,7 +161,7 @@ class LGI(AbstractNetwork):
         filter_start, lengths = self.model_df(word_feats, word_feats_length)
         
         
-        attention = self.attention(seg_feats, filter_start, lengths)
+        attention = self.attention(seg_feats, filter_start, lengths).cuda()
         rqrt_length = torch.rsqrt(lengths.float()).unsqueeze(1).repeat(1, attention.shape[1])
         attention = attention.cuda() * rqrt_length.cuda()
 

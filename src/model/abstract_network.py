@@ -65,13 +65,15 @@ class AbstractNetwork(nn.Module):
             loss: results of self.criterion; dict()
         """
         # code fix # dynamic filter loss (Attentional loss)
-        
+        self.df_loss = torch.sum(-(1. - mask_.cpu().type(torch.FloatTensor).squeeze()) * torch.log((1. - attention_.cpu().type(torch.FloatTensor)) + 1E-12))
         self.loss = self.criterion(crit_inp, gts)
         for name in self.loss.keys():
             self.status[name] = self.loss[name].item()
         if count_loss:
             for name in self.loss.keys():
                 self.counters[name].add(self.status[name], 1)
+        # addition of df attentional loss #
+        self.loss['total_loss'] += self.df_loss
         return self.loss
 
     def update(self, loss):

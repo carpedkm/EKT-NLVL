@@ -55,7 +55,7 @@ class AbstractNetwork(nn.Module):
         """
         pass
 
-    def loss_fn(self, crit_inp, gts, count_loss=True):
+    def loss_fn(self, crit_inp, gts, count_loss=True, attention_=None, mask_=None):
         """ Compute loss
         Args:
             crit_inp: inputs for criterion which is outputs from forward(); dict()
@@ -64,6 +64,8 @@ class AbstractNetwork(nn.Module):
         Returns:
             loss: results of self.criterion; dict()
         """
+        # code fix # dynamic filter loss (Attentional loss)
+        
         self.loss = self.criterion(crit_inp, gts)
         for name in self.loss.keys():
             self.status[name] = self.loss[name].item()
@@ -90,7 +92,7 @@ class AbstractNetwork(nn.Module):
         self.optimizer.step()
         self.optimizer.zero_grad() # set gradients as zero before updating the network
 
-    def forward_update(self, net_inps, gts):
+    def forward_update(self, net_inps, gts, mask):
         """ Forward and update the network at the same time
         Args:
             net_inps: inputs for network; dict()
@@ -101,8 +103,8 @@ class AbstractNetwork(nn.Module):
                 - net_output: output from self.forward(); dict()
         """
 
-        net_out = self.forward(net_inps)
-        loss = self.loss_fn(net_out, gts, count_loss=True)
+        net_out, attention = self.forward(net_inps)
+        loss = self.loss_fn(net_out, gts, count_loss=True, attention_=attention, mask_=mask)
         self.update(loss)
         return {"loss":loss, "net_output":net_out}
 

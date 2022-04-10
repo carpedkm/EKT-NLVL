@@ -4,7 +4,9 @@ from collections import OrderedDict
 from src.model import building_blocks as bb
 from src.model.abstract_network import AbstractNetwork
 from src.utils import io_utils, net_utils, vis_utils
+from src.model.dynamic_filters.build import DynamicFilter
 
+import torch
 class LGI(AbstractNetwork):
     def __init__(self, config, logger=None, verbose=True):
         """ Initialize baseline network for Temporal Language Grounding
@@ -17,6 +19,8 @@ class LGI(AbstractNetwork):
         # create counters and initialize status
         self._create_counters()
         self.reset_status(init_reset=True)
+        self.model_df = DynamicFilter(config)
+        # self.reduction = nn.Linear()
 
     def _build_network(self):
         """ build network that consists of following four components
@@ -86,6 +90,36 @@ class LGI(AbstractNetwork):
             save_path = os.path.join(save_dir, "{}.pkl".format(qid))
             io_utils.check_and_create_dir(save_dir)
             io_utils.write_pkl(save_path, out)
+            
+    def attention(self, videoFeat, filter, lengths):
+        pred_local = torch.bmm(videoFeat, filter.unsqueeze(2)).squeeze()
+        return pred_local
+
+    def get_mask_from_sequence_lengths(self, sequence_lengths: torch.Tensor, max_length: int):
+        ones = sequence_lengths.new_ones(sequence_lengths.size(0), max_length)
+        range_tensor = ones.cumsum(dim=1)
+        return (sequence_lengths.unsqueeze(1) >= range_tensor).long()
+    
+    def masked_softmax(self, vector: torch.Tensor, mask: torch.Tensor, dim: int = -1, memory_efficient: bool = False, mask_fill_value: float = -1e32):
+        if mask is None:
+            result = torch.nn.functional.softmax(vector, dim=dim)
+        else:
+            mask = mask.float()
+            while mask.dim() < vector.dim():
+                mask = mask.unsqueeze(1)
+            if not memory_efficient:
+                # To limit numerical errors from large vector elements outside the mask, we zero these out.
+                result = torch.nn.functional.softmax(vector * mask, dim=dim)
+                result = result * mask
+                result = result / (result.sum(dim=dim, keepdim=True) + 1e-13)
+            else:
+                masked_vector = vector.masked_fill((1 - mask).byte(), mask_fill_value)
+                result = torch.nn.functional.softmax(masked_vector, dim=dim)
+
+        return result + 1e-13
+
+    def mask_softmax(self, feat, mask):
+        return self.masked_softmax(feat, mask, memory_efficient=False)
 
     def _infer(self, net_inps, mode="forward", gts=None):
         # fetch inputs
@@ -115,6 +149,27 @@ class LGI(AbstractNetwork):
         # s_attw: aggregating weights [B,nse]
         # if self.nse > 1:
         q_feats = (se_feats[0] + sen_feats) / 2
+        # dynamic filtering # code update 0409 1500
+        
+        q_feats_len = q_feats.shape[0]
+        
+        # mask = self.get_mask_from_sequence_lengths(seg_feats, seg_feats.shape[1])
+        
+        # q_feats = self.reduction(q_feats)
+        word_feats_length = torch.tensor([word_feats.shape[1] for i in range(word_feats.shape[0])])
+        filter_start, lengths = self.model_df(word_feats, word_feats_length)
+        
+        
+        attention = self.attention(seg_feats, filter_start, lengths)
+        rqrt_length = torch.rsqrt(lengths.float()).unsqueeze(1).repeat(1, attention.shape[1])
+        attention = attention.cuda() * rqrt_length.cuda()
+
+        attention = self.mask_softmax(attention, seg_masks)
+
+        seg_feats = attention.unsqueeze(2).repeat(1,1,512) * seg_feats
+    
+
+
         # else:
             # q_feats = sen_feats
         sa_feats, s_attw = self.vti_fn(seg_feats, seg_masks, q_feats)
@@ -154,7 +209,7 @@ class LGI(AbstractNetwork):
                 outs["timestamps"] = gts["timestamps"]
                 outs["grounding_pred_loc"] = net_utils.to_data(loc)
 
-        return outs
+        return outs, attention
 
     def prepare_batch(self, batch):
         self.gt_list = ["vids", "qids", "timestamps", "duration",

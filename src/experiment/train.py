@@ -82,9 +82,11 @@ def train(config):
             # Forward and update the network
             data_load_duration = tm.get_duration()
             tm.reset()
+            mask = batch['video_masks']
             net_inps, gts = net.prepare_batch(batch)
-            outputs = net.forward_update(net_inps, gts)
+            outputs = net.forward_update(net_inps, gts, mask)
             run_duration = tm.get_duration()
+            
 
             # Compute status for current batch: loss, evaluation scores, etc
             net.compute_status(outputs["net_output"], gts)

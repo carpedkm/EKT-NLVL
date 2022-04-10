@@ -70,7 +70,7 @@ train_loader:
     split: "train"
     in_memory: True
     #in_memory: False
-    batch_size: 100
+    batch_size: 50
     data_dir: "data/charades"
     video_feature_path: "data/charades/features/i3d_finetuned/{}.npy"
     max_length: 10
@@ -81,7 +81,7 @@ test_loader:
     split: "test"
     in_memory: True
     #in_memory: False
-    batch_size: 100
+    batch_size: 50
     data_dir: "data/charades"
     video_feature_path: "data/charades/features/i3d_finetuned/{}.npy"
     max_length: 10
@@ -105,3 +105,23 @@ misc:
 logging:
     print_level: "DEBUG"
     write_level: "INFO"
+
+## custom configuration
+DYNAMIC_FILTER:
+    MODEL: "LSTM"
+    POOLING: "MeanPoolingLayer"
+    HEAD_MODEL: "MLP"
+    LSTM:
+        INPUT_SIZE: 512
+        NUM_LAYERS: 1
+        HIDDEN_SIZE: 256
+        BIAS: False
+        BIDIRECTIONAL: True
+        BATCH_FIRST: True
+        DROPOUT: 0.
+    MLP:
+        INPUT_DIM : 512
+        OUTPUT_DIM: 512
+REDUCTION:
+    INPUT_SIZE: 1024
+    OUTPUT_SIZE: 512

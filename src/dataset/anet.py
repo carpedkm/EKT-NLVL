@@ -47,13 +47,17 @@ class ActivityNetCaptionsDataset(AbstractDataset):
         self.in_memory = config.get("in_memory", False)
         self.feat_hdf5 = config.get("video_feature_path",
                 "data/ActivityNet/feats/sub_activitynet_v1-3.c3d.hdf5")
-
+        self.ann_path = config.get('ann_path')
         # get paths for proposals and captions
         paths = self._get_data_path(config)
 
         # create labels (or load existing one)
-        ann_path = config.get("annotation_path",
-                "data/ActivityNet/captions/annotations/train.json")
+        # ann_path = config.get("annotation_path",
+        #         "data/ActivityNet/captions/annotations/train.json")
+        if self.split == 'train':
+            ann_path = os.path.join('data/ActivityNet/captions/annotations/', self.ann_path)
+        else:
+            ann_path = ['data/ActivityNet/captions/annotations/val_1.json', 'data/ActivityNet/captions/annotations/val_2.json']
         self.anns, self.qids, self.vids  = self._load_annotation(ann_path)
         if not self._exist_data(paths):
             self.generate_labels(config)
@@ -189,7 +193,10 @@ class ActivityNetCaptionsDataset(AbstractDataset):
         S = config.get("num_segment", 128)
         FT = config.get("feature_type", "C3D")
 
-        root_dir = os.path.join(config.get("data_dir", ""), "preprocess")
+        # root_dir = os.path.join(config.get("data_dir", ""), "preprocess")
+        exp_info = config.get('exp_info')
+        root_dir = os.path.join(config.get("data_dir", ""), "preprocess_{}".format(exp_info))
+        
         grounding_info_path = os.path.join(root_dir,
                 "grounding_info", "{}_labels_S{}_{}.hdf5".format(split, S, FT))
         query_info_path = os.path.join(root_dir,
@@ -269,7 +276,8 @@ class ActivityNetCaptionsDataset(AbstractDataset):
         """ Query information """
         if not os.path.exists(self.paths["query_labels"]):
             # build vocabulary from training data
-            train_ann_path = "data/ActivityNet/captions/annotations/train.json"
+            # train_ann_path = "data/ActivityNet/captions/annotations/train.json"
+            train_ann_path = "data/ActivityNet/captions/annotations/{}".format(config.get('ann_path'))
             train_anns, _, _ = self._load_annotation(train_ann_path)
             wtoi = self._build_vocab(train_anns)
             itow = {v:k for k,v in wtoi.items()}

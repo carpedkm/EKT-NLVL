@@ -158,77 +158,77 @@ class ActivityNetCaptionsDataset(AbstractDataset):
             "grounding_start_pos", "grounding_end_pos",
         ]
         
-        apply_vda = random.sample([True, False], 1)
-        apply_vda_loc = random.sample(['Front', 'End'], 1)
+        # apply_vda = random.sample([True, False], 1)
+        # apply_vda_loc = random.sample(['Front', 'End'], 1)
         
-        if self.split == 'train':
+        # if self.split == 'train':
 
-            for b in data:
-                # timestamps, duration, grounding_start_pos, grounding_end_pos
-                if apply_vda[0] == True:
-                    vid_ft_start_new = 0
-                    vid_ft_end_new = 1
-                    if b['timestamps'][1] > b['duration']:
-                        b['timestamps'][1] = b['duration']
-                    st_normal = b['timestamps'][0] / b['duration']
-                    end_normal = b['timestamps'][1] / b['duration']
+        #     for b in data:
+        #         # timestamps, duration, grounding_start_pos, grounding_end_pos
+        #         if apply_vda[0] == True:
+        #             vid_ft_start_new = 0
+        #             vid_ft_end_new = 1
+        #             if b['timestamps'][1] > b['duration']:
+        #                 b['timestamps'][1] = b['duration']
+        #             st_normal = b['timestamps'][0] / b['duration']
+        #             end_normal = b['timestamps'][1] / b['duration']
                     
-                    new_duration = 0
-                    if apply_vda_loc[0] == 'Front':
-                        random_range = random.uniform(0, 0.3)
-                        if st_normal >= random_range:
-                            vid_ft_start_new = random_range
+        #             new_duration = 0
+        #             if apply_vda_loc[0] == 'Front':
+        #                 random_range = random.uniform(0, 0.3)
+        #                 if st_normal >= random_range:
+        #                     vid_ft_start_new = random_range
                             
-                        elif st_normal < random_range:
-                            vid_ft_start_new = st_normal
+        #                 elif st_normal < random_range:
+        #                     vid_ft_start_new = st_normal
 
                         
-                        new_start_normal = st_normal - vid_ft_start_new
-                        new_end_normal = end_normal - vid_ft_start_new
-                        new_duration = 1 - vid_ft_start_new
-                        vid_ft_end_new = 1
+        #                 new_start_normal = st_normal - vid_ft_start_new
+        #                 new_end_normal = end_normal - vid_ft_start_new
+        #                 new_duration = 1 - vid_ft_start_new
+        #                 vid_ft_end_new = 1
                         
-                    elif apply_vda_loc[0] == 'End':
-                        random_range = random.uniform(0.7, 1)
-                        if end_normal <= random_range:
-                            vid_ft_end_new =  random_range
-                        elif end_normal > random_range:
-                            vid_ft_end_new = end_normal
-                        vid_ft_start_new = 0    
-                        new_start_normal = st_normal
-                        new_end_normal = end_normal
-                        new_duration = vid_ft_end_new # normalized
+        #             elif apply_vda_loc[0] == 'End':
+        #                 random_range = random.uniform(0.7, 1)
+        #                 if end_normal <= random_range:
+        #                     vid_ft_end_new =  random_range
+        #                 elif end_normal > random_range:
+        #                     vid_ft_end_new = end_normal
+        #                 vid_ft_start_new = 0    
+        #                 new_start_normal = st_normal
+        #                 new_end_normal = end_normal
+        #                 new_duration = vid_ft_end_new # normalized
                     
-                    # fix the batch
-                    b['duration'] = torch.tensor(b['duration'] * new_duration)
-                    b['timestamps'] = torch.tensor([float(new_start_normal / new_duration * b['duration']), \
-                                        float(new_end_normal / new_duration * b['duration'])])
+        #             # fix the batch
+        #             b['duration'] = torch.tensor(b['duration'] * new_duration)
+        #             b['timestamps'] = torch.tensor([float(new_start_normal / new_duration * b['duration']), \
+        #                                 float(new_end_normal / new_duration * b['duration'])])
                     
-                    b['grounding_start_pos'] = torch.tensor(new_start_normal / new_duration)
-                    b['grounding_end_pos'] = torch.tensor(new_end_normal / new_duration)
-                    b['grounding_att_masks'] = torch.zeros((128))
-                    b_ones = torch.ones((128))
-                    nfeats_old = b['nfeats'] 
-                    b['nfeats'] = torch.tensor(int(torch.round(vid_ft_end_new * nfeats_old)) - int(torch.round(vid_ft_start_new * nfeats_old)), dtype=torch.int)
-                    b['grounding_att_masks'] = b_ones[int(b['nfeats'] * b['grounding_start_pos']):int(b['nfeats']* b['grounding_end_pos'])]
+        #             b['grounding_start_pos'] = torch.tensor(new_start_normal / new_duration)
+        #             b['grounding_end_pos'] = torch.tensor(new_end_normal / new_duration)
+        #             b['grounding_att_masks'] = torch.zeros((128))
+        #             b_ones = torch.ones((128))
+        #             nfeats_old = b['nfeats'] 
+        #             b['nfeats'] = torch.tensor(int(torch.round(vid_ft_end_new * nfeats_old)) - int(torch.round(vid_ft_start_new * nfeats_old)), dtype=torch.int)
+        #             b['grounding_att_masks'] = b_ones[int(b['nfeats'] * b['grounding_start_pos']):int(b['nfeats']* b['grounding_end_pos'])]
                     
-                    tmp_vid_feats = b['video_feats'][:int(nfeats_old),:]
-                    tmp_vid_feats = tmp_vid_feats[int(torch.round(vid_ft_start_new * nfeats_old)):int(torch.round(vid_ft_end_new * nfeats_old)), :]
+        #             tmp_vid_feats = b['video_feats'][:int(nfeats_old),:]
+        #             tmp_vid_feats = tmp_vid_feats[int(torch.round(vid_ft_start_new * nfeats_old)):int(torch.round(vid_ft_end_new * nfeats_old)), :]
                     
-                    assert int(torch.round(vid_ft_end_new * nfeats_old)) - int(torch.round(vid_ft_start_new * nfeats_old)) == b['nfeats']
+        #             assert int(torch.round(vid_ft_end_new * nfeats_old)) - int(torch.round(vid_ft_start_new * nfeats_old)) == b['nfeats']
                     
-                    feat_tmp = torch.zeros((128, 1024))
-                    b['video_feats'] = feat_tmp
-                    b['video_feats'][:int(b['nfeats']),:] = tmp_vid_feats
+        #             feat_tmp = torch.zeros((128, 1024))
+        #             b['video_feats'] = feat_tmp
+        #             b['video_feats'][:int(b['nfeats']),:] = tmp_vid_feats
                     
-                    b['video_masks'] = torch.zeros((128))
-                    b['video_masks'][:int(b['nfeats'])] = torch.tensor(1)
+        #             b['video_masks'] = torch.zeros((128))
+        #             b['video_masks'][:int(b['nfeats'])] = torch.tensor(1)
 
 
-                    b['nfeats'] = b['nfeats'].unsqueeze(0)
-                    b['grounding_start_pos'] = b['grounding_start_pos'].unsqueeze(0)
-                    b['grounding_end_pos'] = b['grounding_end_pos'].unsqueeze(0)
-                    b['video_masks'] = b['video_masks'].unsqueeze(1)
+        #             b['nfeats'] = b['nfeats'].unsqueeze(0)
+        #             b['grounding_start_pos'] = b['grounding_start_pos'].unsqueeze(0)
+        #             b['grounding_end_pos'] = b['grounding_end_pos'].unsqueeze(0)
+        #             b['video_masks'] = b['video_masks'].unsqueeze(1)
         
         
         batch = {k: [d[k] for d in data] for k in data[0].keys()}

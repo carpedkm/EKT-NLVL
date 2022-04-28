@@ -4,6 +4,8 @@ import numpy as np
 def compute_tiou(pred, gt):
     intersection = max(0, min(pred[1], gt[1]) - max(pred[0], gt[0]))
     union = max(pred[1], gt[1]) - min(pred[0], gt[0])
+    if union <= 0:
+        return 0
     return float(intersection) / union
 
 def rank(pred, gt):

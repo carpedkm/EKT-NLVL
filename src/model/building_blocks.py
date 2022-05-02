@@ -698,6 +698,7 @@ class CSMLoss(nn.Module):
         for idx, t_ft in enumerate(text_fts):
             i_ft = image_fts[idx]
             csm_loss += self.cosineloss(t_ft, i_ft, y)
+        csm_loss = csm_loss / len(text_fts)
         return csm_loss
         
     

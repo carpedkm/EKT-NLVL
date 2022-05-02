@@ -86,6 +86,12 @@ class CharadesDataset(AbstractDataset):
             query_labels = h5py.File(self.paths["query_labels"], "r")
             for k in tqdm(self.qids, desc="In-Memory: query"):
                 self.query_labels[k]= query_labels[k][:]
+                
+            with open(self.paths['raw_query'], 'r') as raw_query:
+                self.raw_query = json.load(raw_query)
+            # for k in tqdm(self.qids, desc="In-Memory: raw sentence"):
+            #     self.raw_query[k] = raw_query[k][:]
+                
 
         # load query information
         query_info = io_utils.load_json(self.paths["query_info"])
@@ -102,7 +108,13 @@ class CharadesDataset(AbstractDataset):
         vid = self.anns[qid]["video_id"]
         timestamp = self.anns[qid]["timestamps"]
         duration = self.anns[qid]["duration"]
-
+        # raw_query = self.anns[qid]["raw_query"]
+        # get raw sentence
+        if self.in_memory:
+           q_raw = self.raw_query[qid]
+        else:
+           q_raws = json.load(open(self.paths('raw_query'), 'r'))
+           q_raw = q_raws[qid]
         # get query labels
         if self.in_memory:
             q_label = self.query_labels[qid]
@@ -147,6 +159,7 @@ class CharadesDataset(AbstractDataset):
             "qids": qid,
             "timestamps": timestamp, # GT location [s, e] (second)
             "duration": duration, # video span (second)
+            "raw_query": q_raw,
             "query_lengths": q_leng,
             "query_labels": torch.LongTensor(q_label).unsqueeze(0),     # [1,L_q_max]
             "query_masks": (torch.FloatTensor(q_label)>0).unsqueeze(0), # [1,L_q_max]
@@ -292,14 +305,18 @@ class CharadesDataset(AbstractDataset):
                 "query_info", "{}_label_F{}_L{}_{}.hdf5".format(split, F, L, FT))
         caption_label_path = os.path.join(root_dir,
                 "query_info", "{}_caption_label_F{}_L{}_{}.hdf5".format(split, F, L, FT))
+        raw_query_path = os.path.join(root_dir,
+                "raw_query", "{}_raw_query_F{}_L{}_{}.json".format(split, F, L, FT))
 
         io_utils.check_and_create_dir(os.path.join(root_dir, "grounding_info"))
         io_utils.check_and_create_dir(os.path.join(root_dir, "query_info"))
+        io_utils.check_and_create_dir(os.path.join(root_dir, "raw_query"))
 
         self.paths = {
             "grounding_info": grounding_info_path,
             "query_labels": query_label_path,
             "query_info": query_info_path,
+            "raw_query": raw_query_path
         }
         return self.paths
 
@@ -369,8 +386,24 @@ class CharadesDataset(AbstractDataset):
             query_labels = io_utils.open_hdf5( self.paths["query_labels"], "w")
             for qid in tqdm(encoded["query_lengths"].keys(), desc="Saving query"):
                 _ = query_labels.create_dataset(str(qid), data=encoded["query_labels"][qid])
+                
             query_labels.close()
-
+            
+            # ## CODE updated
+            # save query without any encoding
+            # raw_query = io_utils.open_hdf5(self.paths["raw_query"], "w")
+            save_dic_raw_query = {}
+            for qid in tqdm(encoded['raw_query'].keys(), desc="Saving raw query"):
+                save_dic_raw_query[qid] = encoded['raw_query'][qid]
+            
+            with open(self.paths['raw_query'], 'w') as f:
+                json.dump(save_dic_raw_query, f)
+                # _ = raw_query.create_dataset(str(qid), data=encoded["raw_query"][qid])
+            
+            # raw_query.close()
+            
+            # for qid in tqdm(raw_query
+            
             # save vocabulary and query length
             query_info = {
                 "wtoi": wtoi,

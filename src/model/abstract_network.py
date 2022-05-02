@@ -101,7 +101,13 @@ class AbstractNetwork(nn.Module):
                 - net_output: output from self.forward(); dict()
         """
 
+        # net_ou, text_fts, image_fts = self.forward(net_inps)
         net_out = self.forward(net_inps)
+        # # cal similarity score
+        # if text_fts != None and image_fts != None:
+        #     y = torch.Tensor([1])
+        #     for t_ft, i_ft in zip(text_fts, image_fts):
+        #         nn.CosineEmbeddingLoss(t_ft, i_ft, y)
         loss = self.loss_fn(net_out, gts, count_loss=True)
         self.update(loss)
         return {"loss":loss, "net_output":net_out}

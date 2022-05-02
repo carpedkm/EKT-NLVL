@@ -275,7 +275,7 @@ class QuerySequenceEncoder(nn.Module):
         max_len = onehot.size(1) # == L
         length = mask.sum(1) # [B,]
         pack_wemb = nn.utils.rnn.pack_padded_sequence(
-                wemb, length, batch_first=True, enforce_sorted=False)
+                wemb, length.cpu(), batch_first=True, enforce_sorted=False)
         w_feats, _ = self.rnn(pack_wemb)
         w_feats, max_ = nn.utils.rnn.pad_packed_sequence(
                 w_feats, batch_first=True, total_length=max_len)
@@ -681,6 +681,28 @@ class TGRegressionCriterion(nn.Module):
 
         return total_loss
 
+# added loss
+class CSMLoss(nn.Module):
+    def __init__(self, prefix=""):
+        super(CSMLoss, self).__init__()
+        self.name = prefix if prefix is "" else prefix+"_"
+        print("Cosine Similarity Loss - ", self.name)
+        self.cosineloss = nn.CosineEmbeddingLoss()
+    def forward(self, net_outs, gts):
+        text_fts = net_outs["text_fts"]
+        image_fts = net_outs["image_fts"]
+        y = torch.Tensor([1]).cuda()
+        # calculating the csm loss
+        csm_loss = 0
+        
+        for idx, t_ft in enumerate(text_fts):
+            i_ft = image_fts[idx]
+            csm_loss += self.cosineloss(t_ft, i_ft, y)
+        return csm_loss
+        
+    
+        
+        
 class DQALoss(nn.Module):
     def __init__(self, config, prefix=""):
         super(DQALoss, self).__init__()

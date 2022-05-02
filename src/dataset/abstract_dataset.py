@@ -85,14 +85,14 @@ class AbstractDataset(Dataset):
 
     def _encode_query(self, anns, wtoi, max_length=30):
 
-        labels, lengths = {}, {}
+        labels, lengths, raw_anns = {}, {}, {}
         for qid,ann in tqdm(anns.items(), desc="Encoding query"):
             tokens = ann["tokens"]
 
             # obtain query labels and their lengths
             lengths[qid] = min(len(tokens), max_length)
             labels[qid] = np.zeros((max_length), dtype=np.int)
-
+            raw_anns[qid] = ann['query']
             # words -> labels
             for wi,w in enumerate(tokens):
                 if wi == max_length: break
@@ -101,6 +101,7 @@ class AbstractDataset(Dataset):
         encoded = {
             "query_lengths": lengths,
             "query_labels": labels,
+            "raw_query": raw_anns
         }
         return encoded
 

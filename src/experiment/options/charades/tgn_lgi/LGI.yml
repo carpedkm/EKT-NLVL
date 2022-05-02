@@ -1,4 +1,7 @@
 model:
+    # frame path
+    frame_path: "data/charades/frames"
+    ## model info
     model_type: "LGI"
     resume: False 
     checkpoint_path: ""
@@ -63,6 +66,7 @@ model:
     use_temporal_attention_guidance_loss: True
     tag_weight: 1.0
     use_distinct_query_attention_loss: False
+    use_cosine_sim_loss: True
     dqa_weight: 1.0
     dqa_lambda: 0.3
 train_loader:

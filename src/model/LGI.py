@@ -5,6 +5,9 @@ from src.model import building_blocks as bb
 from src.model.abstract_network import AbstractNetwork
 from src.utils import io_utils, net_utils, vis_utils
 
+import clip
+from PIL import Image
+
 class LGI(AbstractNetwork):
     def __init__(self, config, logger=None, verbose=True):
         """ Initialize baseline network for Temporal Language Grounding
@@ -13,7 +16,12 @@ class LGI(AbstractNetwork):
 
         self._build_network()
         self._build_evaluator()
+        
+        # update
 
+        self.frame_path = self.config['model']['frame_path'] ## add it to anet also 
+        self.clip_model, self.clip_preprocess = clip.load('ViT-B/32', self.device)
+        
         # create counters and initialize status
         self._create_counters()
         self.reset_status(init_reset=True)
@@ -46,14 +54,17 @@ class LGI(AbstractNetwork):
         # build criterion
         self.use_tag_loss = mconfig.get("use_temporal_attention_guidance_loss", True)
         self.use_dqa_loss = mconfig.get("use_distinct_query_attention_loss", True)
+        self.use_csm_loss = mconfig.get("use_cosine_sim_loss", True)
         self.criterion = bb.MultipleCriterions(
             ["grounding"],
             [bb.TGRegressionCriterion(mconfig, prefix="grounding")]
         )
         if self.use_tag_loss:
             self.criterion.add("tag", bb.TAGLoss(mconfig))
-        if self.use_dqa_loss:
-            self.criterion.add("dqa", bb.DQALoss(mconfig))
+        # if self.use_dqa_loss:
+        #     self.criterion.add("dqa", bb.DQALoss(mconfig))
+        if self.use_csm_loss:
+            self.criterion.add("csm", bb.CSMLoss())
 
         # set model list
         self.model_list = ["video_enc", "query_enc",
@@ -90,16 +101,17 @@ class LGI(AbstractNetwork):
     def _infer(self, net_inps, mode="forward", gts=None):
         # fetch inputs
         word_labels = net_inps["query_labels"] # [B,L] (nword == L)
+        raw_query = net_inps["raw_query"] # should check
         word_masks = net_inps["query_masks"] # [B,L]
         c3d_feats = net_inps["video_feats"]  # [B,T,d_v]
         seg_masks = net_inps["video_masks"].squeeze(2) # [B,T]
         B, nseg, _ = c3d_feats.size() # nseg == T
-
+        
         # forward encoders
         # get word-level, sentence-level and segment-level features
         word_feats, sen_feats = self.query_enc(word_labels, word_masks, "both") # [B,L,*]
         seg_feats = self.video_enc(c3d_feats, seg_masks) # [B,nseg,*]
-
+        
         # get semantic phrase features:
         # se_feats: semantic phrase features [B,nse,*];
         #           ([e^1,...,e^n]) in Eq. (7)
@@ -123,10 +135,47 @@ class LGI(AbstractNetwork):
         # loc: prediction of time span (t^s, t^e)
         # t_attw: temporal attention weights (o)
         loc, t_attw = self.ta_reg_fn(sa_feats, seg_masks)
+        
+        # get features (CLIP embedding space)
+
+        duration = net_inps['duration']
+        img_set = []
+        
+        text_fts = []
+        image_fts = []
+        for idx_, loca in enumerate(loc):
+            # get duration
+            dur = duration[idx_]
+            # get center frame
+            start = loca[0] / dur
+            end = loca[1] / dur 
+            vid = net_inps['vids'][idx_]
+            img_load_pth = os.path.join(self.frame_path, vid + '.mp4')
+            len_ = len(os.listdir(img_load_pth))
+            fr_start = len_ * start + 1
+            fr_end = len_ * end + 1
+            fr_half = int((fr_start + fr_end)/2)
+            img_full_pth = os.path.join(img_load_pth, str(int(fr_half)).zfill(5) + '.jpg')
+            image = Image.open(img_full_pth)
+            # append it
+            img_set.append(self.clip_preprocess(image).unsqueeze(0).to(self.device))
+        # encode it into CLIP features
+        for text_, img_ in zip(raw_query, img_set):
+            text_ = clip.tokenize(text_).to(self.device)
+            text_ft = self.clip_model.encode_text(text_)
+            image_ft = self.clip_model.encode_image(img_)
+            
+            text_fts.append(text_ft)
+            image_fts.append(image_ft)
+
 
         if mode == "forward":
             outs = OrderedDict()
             outs["grounding_loc"] = loc
+             # is mode == forward is train?
+            if self.use_csm_loss:
+                outs["text_fts"] = text_fts
+                outs["image_fts"] = image_fts
             if self.use_tag_loss:
                 outs["tag_attw"] = t_attw
             if self.use_dqa_loss:
@@ -160,7 +209,7 @@ class LGI(AbstractNetwork):
         self.gt_list = ["vids", "qids", "timestamps", "duration",
                    "grounding_start_pos", "grounding_end_pos",
                    "grounding_att_masks", "nfeats"]
-        self.both_list = ["grounding_att_masks"]
+        self.both_list = ["grounding_att_masks", "duration", "vids"]
 
         net_inps, gts = {}, {}
         for k in batch.keys():

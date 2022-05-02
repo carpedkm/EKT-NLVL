@@ -699,7 +699,7 @@ class CSMLoss(nn.Module):
             i_ft = image_fts[idx]
             csm_loss += self.cosineloss(t_ft, i_ft, y)
         # csm_loss = csm_loss / len(text_fts)
-        csm_loss = csm_loss * 0.05
+        csm_loss = csm_loss * 0.1
         return csm_loss
         
     

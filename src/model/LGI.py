@@ -155,7 +155,10 @@ class LGI(AbstractNetwork):
             fr_start = len_ * start + 1
             fr_end = len_ * end + 1
             fr_half = int((fr_start + fr_end)/2)
-            img_full_pth = os.path.join(img_load_pth, str(int(fr_half)).zfill(5) + '.jpg')
+            if self.config["model"]["dataset"] == 'charades':
+                img_full_pth = os.path.join(img_load_pth, str(int(fr_half)).zfill(5) + '.jpg')
+            else :
+                img_full_pth = os.path.join(img_load_pth, str(int(fr_half)).zfill(5) + '.png')
             image = Image.open(img_full_pth)
             # append it
             img_set.append(self.clip_preprocess(image).unsqueeze(0).to(self.device))

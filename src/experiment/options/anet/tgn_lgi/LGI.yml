@@ -63,6 +63,7 @@ model:
     use_temporal_attention_guidance_loss: True
     tag_weight: 1.0
     use_distinct_query_attention_loss: False # True
+    use_cosine_sim_loss: True
     dqa_weight: 1.0
     dqa_lambda: 0.2
 train_loader:

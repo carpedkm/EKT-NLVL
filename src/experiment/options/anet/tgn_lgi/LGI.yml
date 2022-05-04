@@ -1,4 +1,6 @@
 model:
+    # frame path
+    frame_path: "data/ActivityNet/frames"
     model_type: "LGI"
     resume: False 
     checkpoint_path: ""

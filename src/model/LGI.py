@@ -164,7 +164,7 @@ class LGI(AbstractNetwork):
             img_set.append(self.clip_preprocess(image).unsqueeze(0).to(self.device))
         # encode it into CLIP features
         for text_, img_ in zip(raw_query, img_set):
-            text_ = clip.tokenize(text_).to(self.device)
+            text_ = clip.tokenize(text_, truncate=True).to(self.device)
             text_ft = self.clip_model.encode_text(text_)
             image_ft = self.clip_model.encode_image(img_)
             
